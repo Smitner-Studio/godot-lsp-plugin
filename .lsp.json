@@ -1,0 +1,9 @@
+{
+  "gdscript": {
+    "command": "node",
+    "args": ["${CLAUDE_PLUGIN_ROOT}/bridge.js"],
+    "extensionToLanguage": {
+      ".gd": "gdscript"
+    }
+  }
+}

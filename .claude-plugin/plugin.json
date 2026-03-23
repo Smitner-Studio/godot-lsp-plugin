@@ -1,0 +1,5 @@
+{
+  "name": "godot-lsp",
+  "description": "GDScript language intelligence via Godot's built-in LSP server. Provides hover, go-to-definition, find-references, document symbols, and real-time diagnostics for .gd files.",
+  "version": "1.0.0"
+}
