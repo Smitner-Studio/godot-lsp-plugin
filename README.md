@@ -15,11 +15,6 @@ claude --plugin-dir /path/to/godot-lsp-plugin
 
 That's it — Claude now has full GDScript language intelligence.
 
-To make it permanent, install the plugin instead:
-```sh
-claude plugins add /path/to/godot-lsp-plugin
-```
-
 ## What it does
 
 - **Hover** — type info and Godot engine documentation at any symbol
@@ -40,24 +35,6 @@ Godot 4.x ships with a built-in LSP server, but it speaks TCP. Claude Code's LSP
 
 - **Godot 4.x editor** running with your project open (the LSP server only runs while the editor is open)
 - **Node.js** (any recent version)
-
-## Installation
-
-1. Clone this repo:
-   ```sh
-   git clone https://github.com/Smitner-Studio/godot-lsp-plugin.git
-   ```
-
-2. Add the plugin to your Claude Code settings (`~/.claude/settings.json`):
-   ```json
-   {
-     "plugins": [
-       "/path/to/godot-lsp-plugin"
-     ]
-   }
-   ```
-
-3. Open your Godot project in the editor (so the LSP server starts), then use Claude Code as normal. LSP features activate automatically for `.gd` files.
 
 ## Configuration
 
