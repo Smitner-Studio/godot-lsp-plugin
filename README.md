@@ -8,19 +8,16 @@ A [Claude Code plugin](https://docs.anthropic.com/en/docs/claude-code) that conn
 # 1. Clone the plugin
 git clone https://github.com/Smitner-Studio/godot-lsp-plugin.git
 
-# 2. Copy the LSP config into your Godot project root
-cp godot-lsp-plugin/.lsp.json /path/to/your-godot-project/.lsp.json
-
-# 3. Edit .lsp.json to point at your actual bridge.js path, then:
+# 2. Open your Godot project in the editor, then:
 cd /path/to/your-godot-project
-claude --plugin-dir /path/to/godot-lsp-plugin/.claude-plugin
+claude --plugin-dir /path/to/godot-lsp-plugin
 ```
 
-Open your project in Godot first, then launch Claude Code with `--plugin-dir`. That's it — Claude now has full GDScript language intelligence.
+That's it — Claude now has full GDScript language intelligence.
 
 To make it permanent, install the plugin instead:
 ```sh
-claude plugins add /path/to/godot-lsp-plugin/.claude-plugin
+claude plugins add /path/to/godot-lsp-plugin
 ```
 
 ## What it does
@@ -48,32 +45,19 @@ Godot 4.x ships with a built-in LSP server, but it speaks TCP. Claude Code's LSP
 
 1. Clone this repo:
    ```sh
-   git clone https://github.com/your-username/godot-lsp-plugin.git
+   git clone https://github.com/Smitner-Studio/godot-lsp-plugin.git
    ```
 
 2. Add the plugin to your Claude Code settings (`~/.claude/settings.json`):
    ```json
    {
      "plugins": [
-       "/path/to/godot-lsp-plugin/.claude-plugin"
+       "/path/to/godot-lsp-plugin"
      ]
    }
    ```
 
-3. Add the LSP configuration to your Godot project. Create or update `.lsp.json` in your Godot project root:
-   ```json
-   {
-     "gdscript": {
-       "command": "node",
-       "args": ["/path/to/godot-lsp-plugin/bridge.js"],
-       "extensionToLanguage": {
-         ".gd": "gdscript"
-       }
-     }
-   }
-   ```
-
-4. Open your Godot project in the editor (so the LSP server starts), then use Claude Code as normal. LSP features activate automatically for `.gd` files.
+3. Open your Godot project in the editor (so the LSP server starts), then use Claude Code as normal. LSP features activate automatically for `.gd` files.
 
 ## Configuration
 
