@@ -4,16 +4,33 @@ A [Claude Code plugin](https://docs.anthropic.com/en/docs/claude-code) that conn
 
 ## Quick start
 
+**Recommended — persistent install via marketplace:**
+
+Inside Claude Code, run:
+
+```
+/plugin marketplace add Smitner-Studio/godot-lsp-plugin
+/plugin install godot-lsp@smitner-studio
+```
+
+The plugin loads automatically in every Claude session after this.
+
+**Quick try — load for one session only:**
+
 ```sh
-# 1. Clone the plugin
 git clone https://github.com/Smitner-Studio/godot-lsp-plugin.git
 
-# 2. Open your Godot project in the editor, then:
-cd /path/to/your-godot-project
+# In your Godot project directory:
 claude --plugin-dir /path/to/godot-lsp-plugin
 ```
 
-That's it — Claude now has full GDScript language intelligence.
+On Windows, use a native path (`C:\path\to\godot-lsp-plugin`) — both forward and backslashes work in PowerShell.
+
+`--plugin-dir` is **session-scoped** — you'll need to pass the flag every time you start Claude. Use the marketplace install above for a persistent setup.
+
+## Verify it's working
+
+With your project open in the Godot editor, start Claude in the project directory and ask it to hover a symbol in any `.gd` file. Type info and engine docs in the response mean the bridge is connected. If hover returns empty or you see a connection error, see [Troubleshooting](#troubleshooting).
 
 ## What it does
 
@@ -31,10 +48,12 @@ Claude Code  <──stdio──>  bridge.js  <──TCP:6005──>  Godot LSP S
 
 Godot 4.x ships with a built-in LSP server, but it speaks TCP. Claude Code's LSP support uses stdio. `bridge.js` bridges the two protocols, including a workaround for Godot's quirk of not always sending an `initialize` response.
 
+The bridge uses only Node's standard library — **no `npm install` required**.
+
 ## Prerequisites
 
 - **Godot 4.x editor** running with your project open (the LSP server only runs while the editor is open)
-- **Node.js** (any recent version)
+- **Node.js 14+** (any recent version)
 
 ## Configuration
 
