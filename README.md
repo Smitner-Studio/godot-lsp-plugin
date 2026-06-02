@@ -1,6 +1,11 @@
 # Godot LSP Plugin for Claude Code
 
-A [Claude Code plugin](https://docs.anthropic.com/en/docs/claude-code) that connects Claude to Godot's built-in GDScript Language Server, giving Claude type-aware intelligence when working with `.gd` files.
+A [Claude Code plugin](https://docs.anthropic.com/en/docs/claude-code) that gives Claude type-aware GDScript intelligence — hover, go-to-definition, find-references, document symbols, and live diagnostics for `.gd` files — by bridging Claude Code's LSP support to Godot's GDScript Language Server.
+
+Two server modes, one plugin:
+
+- **Standalone (recommended for agent use)** — an editor-free, headless GDScript language server. No editor window, always-on, and it reads from disk so edits made outside an editor (by Claude, git, or other tools) never go stale. The bridge auto-spawns it on demand and shuts it down on exit. Requires a Godot build carrying the `gdscript_lsp_standalone` module — see [Standalone mode](#standalone-mode).
+- **Editor host (zero-setup, stock Godot)** — connects to the LSP that any Godot 4.x editor already serves while your project is open. Nothing to build; works with the Godot you already have.
 
 ## Quick start
 
@@ -26,11 +31,27 @@ claude --plugin-dir /path/to/godot-lsp-plugin
 
 On Windows, use a native path (`C:\path\to\godot-lsp-plugin`) — both forward and backslashes work in PowerShell.
 
-`--plugin-dir` is **session-scoped** — you'll need to pass the flag every time you start Claude. Use the marketplace install above for a persistent setup.
+`--plugin-dir` is **session-scoped** — pass the flag every time you start Claude. Use the marketplace install above for a persistent setup.
 
-## Verify it's working
+With no extra configuration the plugin uses **editor-host** mode: open your project in a Godot 4.x editor and the bridge connects to its LSP. For the headless, always-on path, set up [Standalone mode](#standalone-mode).
 
-With your project open in the Godot editor, start Claude in the project directory and ask it to hover a symbol in any `.gd` file. Type info and engine docs in the response mean the bridge is connected. If hover returns empty or you see a connection error, see [Troubleshooting](#troubleshooting).
+## Standalone mode
+
+The standalone server runs the GDScript LSP **without an editor**. The bridge launches it on demand (`--headless --main-loop GDScriptLSPMainLoop --lsp-port <port>`), waits for the port, serves, and kills the child when Claude exits — no window, no manual host management.
+
+It needs a Godot build that includes two things:
+
+1. **The headless-LSP engine changes** — they let the language server run without `EditorNode`. Build from our fork: **[Smitner-Studio/godot @ `lsp-headless`](https://github.com/Smitner-Studio/godot/tree/lsp-headless)**. These changes are proposed upstream (a defensive "don't crash headless" hardening PR); once they land, stock Godot will support this natively and no fork will be needed.
+2. **The `gdscript_lsp_standalone` module** — a small `MainLoop` that drives the server headless. Drop it into `modules/` of the fork checkout before building.
+
+Then point the plugin at the resulting binary:
+
+```sh
+export GODOT_LSP_BIN=/path/to/godot      # the standalone-capable build
+# optional: export GODOT_LSP_PORT=6005
+```
+
+On Windows set it as a user environment variable (so every Claude session inherits it) or in your shell profile. When `GODOT_LSP_BIN` is set the bridge auto-spawns the standalone; when it's unset the bridge falls back to editor-host mode. The first `initialize` takes ~3–5 s while the project's symbols warm up; subsequent requests are instant.
 
 ## What it does
 
@@ -43,26 +64,27 @@ With your project open in the Godot editor, start Claude in the project director
 ## How it works
 
 ```
-Claude Code  <──stdio──>  bridge.js  <──TCP:6005──>  Godot LSP Server
+Claude Code  <──stdio──>  bridge.js  <──TCP:6005──>  GDScript Language Server
+                              │                       (standalone MainLoop, or editor host)
+                              └─ auto-spawns the standalone when GODOT_LSP_BIN is set
 ```
 
-Godot 4.x ships with a built-in LSP server, but it speaks TCP. Claude Code's LSP support uses stdio. `bridge.js` bridges the two protocols, including a workaround for Godot's quirk of not always sending an `initialize` response.
-
-The bridge uses only Node's standard library — **no `npm install` required**.
+Godot's LSP speaks TCP; Claude Code's LSP support speaks stdio. `bridge.js` bridges the two and forwards Godot's **real** `initialize` response (earlier versions faked one after 500 ms, which shipped wrong capabilities and crashed strict clients — that is fixed). The bridge uses only Node's standard library — **no `npm install` required**.
 
 ## Prerequisites
 
-- **Godot 4.x editor** running with your project open (the LSP server only runs while the editor is open)
 - **Node.js 14+** (any recent version)
+- **Either** a standalone-capable Godot build (standalone mode) **or** a running Godot 4.x editor with your project open (editor-host mode)
 
 ## Configuration
 
-Override the default connection with environment variables:
-
 | Variable | Default | Description |
 |---|---|---|
-| `GODOT_LSP_HOST` | `localhost` | Godot LSP server host |
-| `GODOT_LSP_PORT` | `6005` | Godot LSP server port |
+| `GODOT_LSP_BIN` | *(unset)* | Path to a standalone-capable Godot build. Set → the bridge auto-spawns the editor-free standalone. Unset → editor-host mode. |
+| `GODOT_LSP_HOST` | `127.0.0.1` | LSP server host |
+| `GODOT_LSP_PORT` | `6005` | LSP server port |
+| `GODOT_LSP_ROOT` | nearest ancestor with `project.godot` | Project root used when auto-spawning the standalone |
+| `BRIDGE_WATCH` | *(off)* | `=1` watches the project for external `.gd` writes and pushes `didChange` for opened files (covers edits the client can't see) |
 
 ## Included agents
 
@@ -75,10 +97,10 @@ The plugin ships with two specialized agents:
 
 | Symptom | Cause | Fix |
 |---|---|---|
-| Connection error | Godot editor not running | Open your project in Godot |
+| Connection error | No host listening and `GODOT_LSP_BIN` unset | Set `GODOT_LSP_BIN` to a standalone build, or open your project in a Godot editor |
 | Hover returns empty | Cursor not on a symbol, or file has parse errors | Fix parse errors first |
-| No references found | Symbol unused or workspace not indexed | Wait a moment, or re-save the file in Godot |
-| Diagnostics show "Unexpected <" | Stale LSP cache | Save the file in the Godot editor |
+| No references found | Symbol unused or workspace not indexed | Wait a moment for indexing |
+| Diagnostics show "Unexpected <" (editor-host only) | The editor's in-memory view is stale vs disk | Save the file in the editor, or switch to standalone mode (it reads from disk and re-parses on edit) |
 
 ## License
 
